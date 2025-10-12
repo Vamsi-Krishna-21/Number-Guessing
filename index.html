@@ -1,12 +1,10 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
->
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Galaxy Wizard — Number Guessing</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-
 <style>
 body {
   margin: 0;
@@ -22,9 +20,9 @@ body {
   background: rgba(0,0,0,0.6);
   border-radius: 15px;
   padding: 25px;
-  max-width: 800px;
+  max-width: 850px;
   width: 95%;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  box-shadow: 0 0 25px rgba(0,0,0,0.5);
   text-align: center;
 }
 button {
@@ -36,8 +34,9 @@ button {
   color: #021d2d;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.2s ease;
 }
-button:hover { opacity: 0.9; }
+button:hover { transform: scale(1.05); opacity: 0.9; }
 .hidden { display: none; }
 input {
   padding: 10px;
@@ -46,13 +45,13 @@ input {
   background: rgba(255,255,255,0.1);
   color: #fff;
   text-align: center;
-  width: 150px;
+  width: 160px;
 }
 .feedback { margin: 15px 0; min-height: 40px; font-weight: 600; }
 .score { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 10px; margin: 5px; display: inline-block; }
 h1 { font-family: 'Cinzel Decorative', cursive; color: #ffd874; }
 </style>
-
+</head>
 <body>
 <div class="app">
   <h1>🌌 Galaxy Wizard — Number Guessing</h1>
@@ -60,8 +59,6 @@ h1 { font-family: 'Cinzel Decorative', cursive; color: #ffd874; }
   <button id="btnFriend">🧙‍♂️ VS Friend</button>
   <button id="btnDuel">⚔️ Duel (5 Rounds)</button>
   <button id="btnBack" class="hidden">← Back</button>
-
-  <!-- Dynamic content -->
   <div id="gameArea" class="hidden"></div>
 </div>
 
@@ -73,87 +70,86 @@ const sfx = {
   wrong: new Audio('wrong guess.mp3'),
   win: new Audio('win.mp3')
 };
-function playSound(type) {
+function playSound(type){
   const s = sfx[type];
-  if (s) { s.currentTime = 0; s.play().catch(()=>{}); }
+  if(s){ s.currentTime = 0; s.play().catch(()=>{}); }
 }
 
 // === Elements ===
-const btnComputer = document.getElementById('btnComputer');
-const btnFriend = document.getElementById('btnFriend');
-const btnDuel = document.getElementById('btnDuel');
-const btnBack = document.getElementById('btnBack');
-const gameArea = document.getElementById('gameArea');
+const btnComputer=document.getElementById('btnComputer');
+const btnFriend=document.getElementById('btnFriend');
+const btnDuel=document.getElementById('btnDuel');
+const btnBack=document.getElementById('btnBack');
+const gameArea=document.getElementById('gameArea');
 
 // === Navigation ===
-btnComputer.onclick = startComputer;
-btnFriend.onclick = startFriendSetup;
-btnDuel.onclick = startDuel;
-btnBack.onclick = () => { gameArea.innerHTML=''; gameArea.classList.add('hidden'); btnBack.classList.add('hidden'); };
+btnComputer.onclick=startComputer;
+btnFriend.onclick=startFriendSetup;
+btnDuel.onclick=startDuel;
+btnBack.onclick=()=>{ gameArea.innerHTML=''; gameArea.classList.add('hidden'); btnBack.classList.add('hidden'); };
 
-// === Helpers ===
-const attemptsForRange = (min,max)=>Math.ceil(Math.log2(max-min+1))+1;
+// === Helper ===
+const attemptsForRange=(min,max)=>Math.ceil(Math.log2(max-min+1))+1;
 
-// === VS Computer ===
+// === VS COMPUTER ===
 function startComputer(){
   btnBack.classList.remove('hidden');
   gameArea.classList.remove('hidden');
   playSound('start');
-  const min = Math.floor(Math.random()*50)+1;
-  const max = min + Math.floor(Math.random()*100)+50;
-  const secret = Math.floor(Math.random()*(max-min+1))+min;
-  let attempts = 0, maxAtt = attemptsForRange(min,max);
+  const min=Math.floor(Math.random()*50)+1;
+  const max=min+Math.floor(Math.random()*100)+50;
+  const secret=Math.floor(Math.random()*(max-min+1))+min;
+  let attempts=0,maxAtt=attemptsForRange(min,max);
 
-  gameArea.innerHTML = `
-    <h2>VS Computer</h2>
+  gameArea.innerHTML=`
+    <h2>🪄 VS Computer</h2>
     <p>Range: ${min} - ${max}</p>
     <input id="guess" type="number" placeholder="Your guess">
     <button id="submit">Guess</button>
     <div id="feedback" class="feedback">Start guessing!</div>
   `;
-  const g = document.getElementById('guess');
-  const f = document.getElementById('feedback');
-  const s = document.getElementById('submit');
-
-  s.onclick = ()=>{
-    const val = +g.value;
-    if(val<min||val>max){ f.textContent='Out of range'; playSound('wrong'); return;}
+  const g=document.getElementById('guess');
+  const f=document.getElementById('feedback');
+  const s=document.getElementById('submit');
+  s.onclick=()=>{
+    const val=+g.value;
+    if(val<min||val>max){f.textContent='Out of range!'; playSound('wrong'); return;}
     attempts++;
-    if(val===secret){
-      f.textContent=`Correct! It was ${secret}.`;
-      playSound('correct'); playSound('win');
-      s.disabled=true;
-    } else if(attempts>=maxAtt){
-      f.textContent=`Out of attempts! Number was ${secret}.`;
-      playSound('wrong');
-      s.disabled=true;
-    } else {
-      f.textContent=val<secret?'Too low!':'Too high!';
-      playSound('wrong');
-    }
+    if(val===secret){ f.textContent=`Correct! It was ${secret}.`; playSound('correct'); playSound('win'); s.disabled=true;}
+    else if(attempts>=maxAtt){ f.textContent=`Out of attempts! The number was ${secret}.`; playSound('wrong'); s.disabled=true;}
+    else{ f.textContent=val<secret?'Too low!':'Too high!'; playSound('wrong'); }
     g.value='';
   };
   g.addEventListener('keydown',e=>{if(e.key==='Enter')s.click();});
 }
 
-// === VS Friend ===
+// === VS FRIEND ===
 function startFriendSetup(){
   btnBack.classList.remove('hidden');
   gameArea.classList.remove('hidden');
   gameArea.innerHTML=`
-    <h2>VS Friend — Setup</h2>
+    <h2>🧙‍♂️ VS Friend — Setup</h2>
     <p>Player 1: Enter range and secret number</p>
     <input id="min" type="number" placeholder="Min">
     <input id="max" type="number" placeholder="Max"><br><br>
-    <input id="secret" type="number" placeholder="Secret number">
+    <div style="position:relative; display:inline-block;">
+      <input id="secret" type="password" placeholder="Secret number">
+      <button id="toggleSecret" style="position:absolute; right:-40px; top:2px; background:#222; color:#fff; border:none; border-radius:6px; cursor:pointer;">👁️</button>
+    </div><br>
     <button id="confirm">Confirm</button>
     <div id="feedback" class="feedback"></div>
   `;
   const minI=document.getElementById('min');
   const maxI=document.getElementById('max');
   const secI=document.getElementById('secret');
+  const toggle=document.getElementById('toggleSecret');
   const conf=document.getElementById('confirm');
   const f=document.getElementById('feedback');
+
+  toggle.onclick=()=>{
+    if(secI.type==="password"){ secI.type="number"; toggle.textContent="🙈"; }
+    else { secI.type="password"; toggle.textContent="👁️"; }
+  };
 
   conf.onclick=()=>{
     const min=+minI.value, max=+maxI.value, secret=+secI.value;
@@ -162,15 +158,15 @@ function startFriendSetup(){
     playSound('start');
     startFriendGame(min,max,secret);
   };
-  // Enter key logic
+
   maxI.addEventListener('keydown',e=>{if(e.key==='Enter')secI.focus();});
   secI.addEventListener('keydown',e=>{if(e.key==='Enter')conf.click();});
 }
 
 function startFriendGame(min,max,secret){
   gameArea.innerHTML=`
-    <h2>VS Friend — Player 2 Guess</h2>
-    <p>Range: ${min}-${max}</p>
+    <h2>🧙‍♀️ VS Friend — Player 2 Guess</h2>
+    <p>Range: ${min} - ${max}</p>
     <input id="guess" type="number" placeholder="Your guess">
     <button id="submit">Guess</button>
     <div id="feedback" class="feedback">Start guessing!</div>
@@ -182,57 +178,92 @@ function startFriendGame(min,max,secret){
   const s=document.getElementById('submit');
   s.onclick=()=>{
     const val=+g.value;
-    if(val<min||val>max){f.textContent='Out of range'; playSound('wrong');return;}
+    if(val<min||val>max){f.textContent='Out of range!'; playSound('wrong');return;}
     attempts++;
-    if(val===secret){f.textContent=`Correct!`; playSound('correct'); playSound('win'); s.disabled=true;}
-    else if(attempts>=maxAtt){f.textContent=`Out of attempts! The number was ${secret}`; playSound('wrong'); s.disabled=true;}
+    if(val===secret){f.textContent='Correct!'; playSound('correct'); playSound('win'); s.disabled=true;}
+    else if(attempts>=maxAtt){f.textContent=`Out of attempts! The number was ${secret}.`; playSound('wrong'); s.disabled=true;}
     else{f.textContent=val<secret?'Too low!':'Too high!'; playSound('wrong');}
     g.value='';
   };
   g.addEventListener('keydown',e=>{if(e.key==='Enter')s.click();});
 }
 
-// === Duel Mode ===
+// === DUEL MODE ===
 function startDuel(){
   btnBack.classList.remove('hidden');
   gameArea.classList.remove('hidden');
-  playSound('start');
+
+  gameArea.innerHTML=`
+    <h2>⚔️ Duel Setup</h2>
+    <p>Enter both players' names to begin the 5-round duel.</p>
+    <input id="nameP1" type="text" placeholder="Player 1 Name">
+    <input id="nameP2" type="text" placeholder="Player 2 Name"><br><br>
+    <button id="startDuelBtn">Start Duel</button>
+  `;
+
+  const startBtn=document.getElementById('startDuelBtn');
+  const name1=document.getElementById('nameP1');
+  const name2=document.getElementById('nameP2');
+  name2.addEventListener('keydown',e=>{if(e.key==='Enter')startBtn.click();});
+  startBtn.onclick=()=>{
+    const p1Name=name1.value.trim()||"Player 1";
+    const p2Name=name2.value.trim()||"Player 2";
+    playSound('start');
+    beginDuelGame(p1Name,p2Name);
+  };
+}
+
+function beginDuelGame(p1Name,p2Name){
+  const min=1,max=100;
   let round=1,total=5,p1Score=0,p2Score=0;
-  let secret=Math.floor(Math.random()*100)+1;
+  let secret=Math.floor(Math.random()*(max-min+1))+min;
   render();
 
   function render(){
     gameArea.innerHTML=`
       <h2>⚔️ Duel Round ${round}/${total}</h2>
-      <div><input id="p1" type="number" placeholder="Player 1">
-      <input id="p2" type="number" placeholder="Player 2"></div>
+      <p style="color:#aaa;">Range: ${min} – ${max}</p>
+      <div><strong>${p1Name}</strong> vs <strong>${p2Name}</strong></div>
+      <div>
+        <input id="p1" type="password" placeholder="${p1Name} Guess">
+        <input id="p2" type="password" placeholder="${p2Name} Guess">
+      </div>
       <button id="submit">Submit</button>
       <div id="feedback" class="feedback">Both players, enter guesses.</div>
-      <div><span class="score">P1: ${p1Score}</span>
-           <span class="score">P2: ${p2Score}</span></div>`;
+      <div>
+        <span class="score">${p1Name}: ${p1Score}</span>
+        <span class="score">${p2Name}: ${p2Score}</span>
+      </div>
+    `;
+
     const p1=document.getElementById('p1'),p2=document.getElementById('p2'),sub=document.getElementById('submit'),f=document.getElementById('feedback');
+
     sub.onclick=()=>{
       const g1=+p1.value,g2=+p2.value;
-      if(!g1||!g2){f.textContent='Both must guess.'; playSound('wrong'); return;}
-      const d1=Math.abs(g1-secret), d2=Math.abs(g2-secret);
+      if(!g1||!g2){f.textContent='Both must enter valid guesses.'; playSound('wrong');return;}
+      const d1=Math.abs(g1-secret),d2=Math.abs(g2-secret);
       let msg=`Secret: ${secret}. `;
-      if(d1===0&&d2===0){msg+='Both exact!';}
-      else if(d1===0){p1Score++; msg+='P1 exact!'; playSound('correct');}
-      else if(d2===0){p2Score++; msg+='P2 exact!'; playSound('correct');}
-      else if(d1<d2){p1Score++; msg+='P1 closer!'; playSound('correct');}
-      else if(d2<d1){p2Score++; msg+='P2 closer!'; playSound('correct');}
-      else msg+='Tie round.';
-      f.textContent=msg;
-      sub.disabled=true;
+      if(d1===0&&d2===0){msg+='Both guessed exactly!';}
+      else if(d1===0){p1Score++;msg+=`${p1Name} nailed it!`;playSound('correct');}
+      else if(d2===0){p2Score++;msg+=`${p2Name} nailed it!`;playSound('correct');}
+      else if(d1<d2){p1Score++;msg+=`${p1Name} is closer!`;playSound('correct');}
+      else if(d2<d1){p2Score++;msg+=`${p2Name} is closer!`;playSound('correct');}
+      else msg+='Both are equally close — draw round.';
+      f.textContent=msg; sub.disabled=true;
+
       if(round<total){
         setTimeout(()=>{
-          round++; secret=Math.floor(Math.random()*100)+1;
-          playSound('start'); render();
+          round++;
+          secret=Math.floor(Math.random()*(max-min+1))+min;
+          playSound('start');
+          render();
         },7000);
       } else {
         setTimeout(()=>{
           playSound('win');
-          f.innerHTML=`Final: P1 ${p1Score} — P2 ${p2Score}. ${p1Score>p2Score?'🏆 P1 wins!':p2Score>p1Score?'🏆 P2 wins!':'🤝 Tie!'}`;
+          f.innerHTML=`Final Score — ${p1Name}: ${p1Score}, ${p2Name}: ${p2Score}.<br>${
+            p1Score>p2Score?`🏆 ${p1Name} Wins!`:p2Score>p1Score?`🏆 ${p2Name} Wins!`:`🤝 It's a Tie!`
+          }`;
           sub.disabled=true;
         },2000);
       }
