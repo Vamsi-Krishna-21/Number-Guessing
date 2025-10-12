@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Galaxy Number Guessing Game</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cinzel Decorative', cursive; color: #fff; }
+  body {
+    background: url('jgalaxy theme.jpg') no-repeat center center fixed;
+    background-size: cover;
+    overflow: hidden;
+  }
+  .screen {
+    display: none;
+    text-align: center;
+    min-height: 100vh;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    animation: fadeIn 0.7s ease;
+  }
+  .active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  button {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid #fff;
+    border-radius: 10px;
+    padding: 12px 25px;
+    margin: 10px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover { background: rgba(255,255,255,0.3); }
+  input {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-bottom: 2px solid #fff;
+    color: #fff;
+    padding: 8px;
+    margin: 10px;
+    font-size: 1rem;
+    text-align: center;
+    width: 120px;
+  }
+  #backBtn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255,255,255,0.2);
+  }
+</style>
+</head>
+<body>
+  <!-- Main Menu -->
+  <div id="menu" class="screen active">
+    <h1>Hogwarts Number Guessing Game</h1>
+    <button onclick="startMode('computer')">VS Computer</button>
+    <button onclick="startMode('friend')">VS Friend</button>
+  </div>
+
+  <!-- Range / Setup -->
+  <div id="setup" class="screen">
+    <button id="backBtn" onclick="goBack()">← Back</button>
+    <h2 id="setupTitle"></h2>
+    <div id="setupFields"></div>
+  </div>
+
+  <!-- Game -->
+  <div id="game" class="screen">
+    <button id="backBtn" onclick="goBack()">← Back</button>
+    <h2 id="gameTitle"></h2>
+    <p id="attemptInfo"></p>
+    <input type="number" id="guessInput" placeholder="Your guess" />
+    <button id="guessBtn" onclick="makeGuess()">Guess</button>
+    <p id="feedback"></p>
+    <button id="restartBtn" onclick="restart()">Restart</button>
+  </div>
+
+  <!-- Result -->
+  <div id="result" class="screen">
+    <h2 id="resultMsg"></h2>
+    <button onclick="restart()">Play Again</button>
+    <button onclick="goBack()">Main Menu</button>
+  </div>
+
+<script>
+let mode = '';
+let number = 0, min = 1, max = 100, attempts = 0, maxAttempts = 10, player1Set = false;
+
+function show(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+}
+
+function startMode(selectedMode) {
+  mode = selectedMode;
+  if (mode === 'computer') {
+    min = Math.floor(Math.random() * 100) + 1;
+    max = min + Math.floor(Math.random() * 100) + 50;
+    number = Math.floor(Math.random() * (max - min + 1)) + min;
+    maxAttempts = calcAttempts(max - min);
+    attempts = 0;
+    show('game');
+    document.getElementById('gameTitle').innerText = `Guess the number between ${min} and ${max}`;
+    document.getElementById('attemptInfo').innerText = `Attempts left: ${maxAttempts}`;
+    document.getElementById('feedback').innerText = '';
+  } else {
+    show('setup');
+    document.getElementById('setupTitle').innerText = 'VS Friend Setup';
+    document.getElementById('setupFields').innerHTML = `
+      <p>Player 1: Enter Range</p>
+      <input id="minInput" type="number" placeholder="Min" />
+      <input id="maxInput" type="number" placeholder="Max" />
+      <button onclick="setRange()">Set Range</button>
+    `;
+  }
+}
+
+function setRange() {
+  min = parseInt(document.getElementById('minInput').value);
+  max = parseInt(document.getElementById('maxInput').value);
+  if (isNaN(min) || isNaN(max) || min >= max) {
+    alert('Enter valid range!');
+    return;
+  }
+  maxAttempts = calcAttempts(max - min);
+  document.getElementById('setupFields').innerHTML = `
+    <p>Range: ${min} - ${max}</p>
+    <p>Player 1: Choose secret number</p>
+    <input id="secretNum" type="number" placeholder="Secret number" />
+    <button onclick="setSecret()">Confirm Number</button>
+  `;
+}
+
+function setSecret() {
+  const val = parseInt(document.getElementById('secretNum').value);
+  if (isNaN(val) || val < min || val > max) {
+    alert('Invalid number!');
+    return;
+  }
+  number = val;
+  attempts = 0;
+  player1Set = true;
+  show('game');
+  document.getElementById('gameTitle').innerText = `Player 2: Guess the number between ${min} and ${max}`;
+  document.getElementById('attemptInfo').innerText = `Attempts left: ${maxAttempts}`;
+  document.getElementById('feedback').innerText = '';
+}
+
+function calcAttempts(range) {
+  if (range <= 100) return 10;
+  if (range <= 200) return 12;
+  if (range <= 300) return 7;
+  return Math.max(5, 20 - Math.floor(range / 100));
+}
+
+function makeGuess() {
+  const guess = parseInt(document.getElementById('guessInput').value);
+  if (isNaN(guess)) return;
+  attempts++;
+  const remaining = maxAttempts - attempts;
+  if (guess === number) {
+    showResult(`🎉 Correct! You guessed it in ${attempts} attempts.`);
+  } else if (attempts >= maxAttempts) {
+    showResult(`❌ Out of attempts! The number was ${number}.`);
+  } else {
+    const msg = guess < number ? 'Too low!' : 'Too high!';
+    document.getElementById('feedback').innerText = msg;
+    document.getElementById('attemptInfo').innerText = `Attempts left: ${remaining}`;
+  }
+  document.getElementById('guessInput').value = '';
+}
+
+document.getElementById('guessInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') makeGuess();
+});
+
+function showResult(msg) {
+  document.getElementById('resultMsg').innerText = msg;
+  show('result');
+}
+
+function restart() {
+  if (mode === 'friend') {
+    const reselect = confirm('Do you want to reselect the range?');
+    if (reselect) {
+      player1Set = false;
+      show('setup');
+      document.getElementById('setupFields').innerHTML = `
+        <p>Player 1: Enter Range</p>
+        <input id="minInput" type="number" placeholder="Min" />
+        <input id="maxInput" type="number" placeholder="Max" />
+        <button onclick="setRange()">Set Range</button>
+      `;
+      return;
+    } else {
+      const reselectNum = confirm('Do you want to reselect the number to guess?');
+      if (reselectNum) {
+        document.getElementById('setupTitle').innerText = 'Reselect Number';
+        document.getElementById('setupFields').innerHTML = `
+          <p>Range: ${min} - ${max}</p>
+          <p>Player 1: Choose secret number</p>
+          <input id="secretNum" type="number" placeholder="Secret number" />
+          <button onclick="setSecret()">Confirm Number</button>
+        `;
+        show('setup');
+        return;
+      }
+    }
+  }
+  startMode(mode);
+}
+
+function goBack() {
+  show('menu');
+}
+</script>
+</body>
+</html>
