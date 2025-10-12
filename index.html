@@ -1,221 +1,244 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Galaxy Number Guessing Game</title>
+>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galaxy Wizard — Number Guessing</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cinzel Decorative', cursive; color: #fff; }
-  body {
-    background: url('jgalaxy theme.jpg') no-repeat center center fixed;
-    background-size: cover;
-    overflow: hidden;
-  }
-  .screen {
-    display: none;
-    text-align: center;
-    min-height: 100vh;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    animation: fadeIn 0.7s ease;
-  }
-  .active { display: flex; }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  button {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid #fff;
-    border-radius: 10px;
-    padding: 12px 25px;
-    margin: 10px;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-  button:hover { background: rgba(255,255,255,0.3); }
-  input {
-    background: rgba(255,255,255,0.1);
-    border: none;
-    border-bottom: 2px solid #fff;
-    color: #fff;
-    padding: 8px;
-    margin: 10px;
-    font-size: 1rem;
-    text-align: center;
-    width: 120px;
-  }
-  #backBtn {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: rgba(255,255,255,0.2);
-  }
+body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background: url('jgalaxy theme.jpg') center/cover no-repeat fixed;
+  color: #e9fbff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+.app {
+  background: rgba(0,0,0,0.6);
+  border-radius: 15px;
+  padding: 25px;
+  max-width: 800px;
+  width: 95%;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  text-align: center;
+}
+button {
+  background: linear-gradient(135deg,#3fd7e5,#4b61ff);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  margin: 10px;
+  color: #021d2d;
+  font-weight: 700;
+  cursor: pointer;
+}
+button:hover { opacity: 0.9; }
+.hidden { display: none; }
+input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  text-align: center;
+  width: 150px;
+}
+.feedback { margin: 15px 0; min-height: 40px; font-weight: 600; }
+.score { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 10px; margin: 5px; display: inline-block; }
+h1 { font-family: 'Cinzel Decorative', cursive; color: #ffd874; }
 </style>
-</head>
+
 <body>
-  <!-- Main Menu -->
-  <div id="menu" class="screen active">
-    <h1>Number Guessing Game</h1>
-    <button onclick="startMode('computer')">VS Computer</button>
-    <button onclick="startMode('friend')">VS Friend</button>
-  </div>
+<div class="app">
+  <h1>🌌 Galaxy Wizard — Number Guessing</h1>
+  <button id="btnComputer">🪄 VS Computer</button>
+  <button id="btnFriend">🧙‍♂️ VS Friend</button>
+  <button id="btnDuel">⚔️ Duel (5 Rounds)</button>
+  <button id="btnBack" class="hidden">← Back</button>
 
-  <!-- Range / Setup -->
-  <div id="setup" class="screen">
-    <button id="backBtn" onclick="goBack()">← Back</button>
-    <h2 id="setupTitle"></h2>
-    <div id="setupFields"></div>
-  </div>
-
-  <!-- Game -->
-  <div id="game" class="screen">
-    <button id="backBtn" onclick="goBack()">← Back</button>
-    <h2 id="gameTitle"></h2>
-    <p id="attemptInfo"></p>
-    <input type="number" id="guessInput" placeholder="Your guess" />
-    <button id="guessBtn" onclick="makeGuess()">Guess</button>
-    <p id="feedback"></p>
-    <button id="restartBtn" onclick="restart()">Restart</button>
-  </div>
-
-  <!-- Result -->
-  <div id="result" class="screen">
-    <h2 id="resultMsg"></h2>
-    <button onclick="restart()">Play Again</button>
-    <button onclick="goBack()">Main Menu</button>
-  </div>
+  <!-- Dynamic content -->
+  <div id="gameArea" class="hidden"></div>
+</div>
 
 <script>
-let mode = '';
-let number = 0, min = 1, max = 100, attempts = 0, maxAttempts = 10, player1Set = false;
-
-function show(screenId) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(screenId).classList.add('active');
+// === Sounds ===
+const sfx = {
+  start: new Audio('start.mp3'),
+  correct: new Audio('correct guess.mp3'),
+  wrong: new Audio('wrong guess.mp3'),
+  win: new Audio('win.mp3')
+};
+function playSound(type) {
+  const s = sfx[type];
+  if (s) { s.currentTime = 0; s.play().catch(()=>{}); }
 }
 
-function startMode(selectedMode) {
-  mode = selectedMode;
-  if (mode === 'computer') {
-    min = Math.floor(Math.random() * 100) + 1;
-    max = min + Math.floor(Math.random() * 100) + 50;
-    number = Math.floor(Math.random() * (max - min + 1)) + min;
-    maxAttempts = calcAttempts(max - min);
-    attempts = 0;
-    show('game');
-    document.getElementById('gameTitle').innerText = `Guess the number between ${min} and ${max}`;
-    document.getElementById('attemptInfo').innerText = `Attempts left: ${maxAttempts}`;
-    document.getElementById('feedback').innerText = '';
-  } else {
-    show('setup');
-    document.getElementById('setupTitle').innerText = 'VS Friend Setup';
-    document.getElementById('setupFields').innerHTML = `
-      <p>Player 1: Enter Range</p>
-      <input id="minInput" type="number" placeholder="Min" />
-      <input id="maxInput" type="number" placeholder="Max" />
-      <button onclick="setRange()">Set Range</button>
-    `;
-  }
-}
+// === Elements ===
+const btnComputer = document.getElementById('btnComputer');
+const btnFriend = document.getElementById('btnFriend');
+const btnDuel = document.getElementById('btnDuel');
+const btnBack = document.getElementById('btnBack');
+const gameArea = document.getElementById('gameArea');
 
-function setRange() {
-  min = parseInt(document.getElementById('minInput').value);
-  max = parseInt(document.getElementById('maxInput').value);
-  if (isNaN(min) || isNaN(max) || min >= max) {
-    alert('Enter valid range!');
-    return;
-  }
-  maxAttempts = calcAttempts(max - min);
-  document.getElementById('setupFields').innerHTML = `
+// === Navigation ===
+btnComputer.onclick = startComputer;
+btnFriend.onclick = startFriendSetup;
+btnDuel.onclick = startDuel;
+btnBack.onclick = () => { gameArea.innerHTML=''; gameArea.classList.add('hidden'); btnBack.classList.add('hidden'); };
+
+// === Helpers ===
+const attemptsForRange = (min,max)=>Math.ceil(Math.log2(max-min+1))+1;
+
+// === VS Computer ===
+function startComputer(){
+  btnBack.classList.remove('hidden');
+  gameArea.classList.remove('hidden');
+  playSound('start');
+  const min = Math.floor(Math.random()*50)+1;
+  const max = min + Math.floor(Math.random()*100)+50;
+  const secret = Math.floor(Math.random()*(max-min+1))+min;
+  let attempts = 0, maxAtt = attemptsForRange(min,max);
+
+  gameArea.innerHTML = `
+    <h2>VS Computer</h2>
     <p>Range: ${min} - ${max}</p>
-    <p>Player 1: Choose secret number</p>
-    <input id="secretNum" type="number" placeholder="Secret number" />
-    <button onclick="setSecret()">Confirm Number</button>
+    <input id="guess" type="number" placeholder="Your guess">
+    <button id="submit">Guess</button>
+    <div id="feedback" class="feedback">Start guessing!</div>
   `;
-}
+  const g = document.getElementById('guess');
+  const f = document.getElementById('feedback');
+  const s = document.getElementById('submit');
 
-function setSecret() {
-  const val = parseInt(document.getElementById('secretNum').value);
-  if (isNaN(val) || val < min || val > max) {
-    alert('Invalid number!');
-    return;
-  }
-  number = val;
-  attempts = 0;
-  player1Set = true;
-  show('game');
-  document.getElementById('gameTitle').innerText = `Player 2: Guess the number between ${min} and ${max}`;
-  document.getElementById('attemptInfo').innerText = `Attempts left: ${maxAttempts}`;
-  document.getElementById('feedback').innerText = '';
-}
-
-function calcAttempts(range) {
-  if (range <= 100) return 10;
-  if (range <= 200) return 12;
-  if (range <= 300) return 7;
-  return Math.max(5, 20 - Math.floor(range / 100));
-}
-
-function makeGuess() {
-  const guess = parseInt(document.getElementById('guessInput').value);
-  if (isNaN(guess)) return;
-  attempts++;
-  const remaining = maxAttempts - attempts;
-  if (guess === number) {
-    showResult(`🎉 Correct! You guessed it in ${attempts} attempts.`);
-  } else if (attempts >= maxAttempts) {
-    showResult(`❌ Out of attempts! The number was ${number}.`);
-  } else {
-    const msg = guess < number ? 'Too low!' : 'Too high!';
-    document.getElementById('feedback').innerText = msg;
-    document.getElementById('attemptInfo').innerText = `Attempts left: ${remaining}`;
-  }
-  document.getElementById('guessInput').value = '';
-}
-
-document.getElementById('guessInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') makeGuess();
-});
-
-function showResult(msg) {
-  document.getElementById('resultMsg').innerText = msg;
-  show('result');
-}
-
-function restart() {
-  if (mode === 'friend') {
-    const reselect = confirm('Do you want to reselect the range?');
-    if (reselect) {
-      player1Set = false;
-      show('setup');
-      document.getElementById('setupFields').innerHTML = `
-        <p>Player 1: Enter Range</p>
-        <input id="minInput" type="number" placeholder="Min" />
-        <input id="maxInput" type="number" placeholder="Max" />
-        <button onclick="setRange()">Set Range</button>
-      `;
-      return;
+  s.onclick = ()=>{
+    const val = +g.value;
+    if(val<min||val>max){ f.textContent='Out of range'; playSound('wrong'); return;}
+    attempts++;
+    if(val===secret){
+      f.textContent=`Correct! It was ${secret}.`;
+      playSound('correct'); playSound('win');
+      s.disabled=true;
+    } else if(attempts>=maxAtt){
+      f.textContent=`Out of attempts! Number was ${secret}.`;
+      playSound('wrong');
+      s.disabled=true;
     } else {
-      const reselectNum = confirm('Do you want to reselect the number to guess?');
-      if (reselectNum) {
-        document.getElementById('setupTitle').innerText = 'Reselect Number';
-        document.getElementById('setupFields').innerHTML = `
-          <p>Range: ${min} - ${max}</p>
-          <p>Player 1: Choose secret number</p>
-          <input id="secretNum" type="number" placeholder="Secret number" />
-          <button onclick="setSecret()">Confirm Number</button>
-        `;
-        show('setup');
-        return;
-      }
+      f.textContent=val<secret?'Too low!':'Too high!';
+      playSound('wrong');
     }
-  }
-  startMode(mode);
+    g.value='';
+  };
+  g.addEventListener('keydown',e=>{if(e.key==='Enter')s.click();});
 }
 
-function goBack() {
-  show('menu');
+// === VS Friend ===
+function startFriendSetup(){
+  btnBack.classList.remove('hidden');
+  gameArea.classList.remove('hidden');
+  gameArea.innerHTML=`
+    <h2>VS Friend — Setup</h2>
+    <p>Player 1: Enter range and secret number</p>
+    <input id="min" type="number" placeholder="Min">
+    <input id="max" type="number" placeholder="Max"><br><br>
+    <input id="secret" type="number" placeholder="Secret number">
+    <button id="confirm">Confirm</button>
+    <div id="feedback" class="feedback"></div>
+  `;
+  const minI=document.getElementById('min');
+  const maxI=document.getElementById('max');
+  const secI=document.getElementById('secret');
+  const conf=document.getElementById('confirm');
+  const f=document.getElementById('feedback');
+
+  conf.onclick=()=>{
+    const min=+minI.value, max=+maxI.value, secret=+secI.value;
+    if(!min||!max||min>=max){f.textContent='Invalid range'; playSound('wrong');return;}
+    if(secret<min||secret>max){f.textContent='Secret must be in range'; playSound('wrong');return;}
+    playSound('start');
+    startFriendGame(min,max,secret);
+  };
+  // Enter key logic
+  maxI.addEventListener('keydown',e=>{if(e.key==='Enter')secI.focus();});
+  secI.addEventListener('keydown',e=>{if(e.key==='Enter')conf.click();});
+}
+
+function startFriendGame(min,max,secret){
+  gameArea.innerHTML=`
+    <h2>VS Friend — Player 2 Guess</h2>
+    <p>Range: ${min}-${max}</p>
+    <input id="guess" type="number" placeholder="Your guess">
+    <button id="submit">Guess</button>
+    <div id="feedback" class="feedback">Start guessing!</div>
+  `;
+  playSound('start');
+  let attempts=0,maxAtt=attemptsForRange(min,max);
+  const g=document.getElementById('guess');
+  const f=document.getElementById('feedback');
+  const s=document.getElementById('submit');
+  s.onclick=()=>{
+    const val=+g.value;
+    if(val<min||val>max){f.textContent='Out of range'; playSound('wrong');return;}
+    attempts++;
+    if(val===secret){f.textContent=`Correct!`; playSound('correct'); playSound('win'); s.disabled=true;}
+    else if(attempts>=maxAtt){f.textContent=`Out of attempts! The number was ${secret}`; playSound('wrong'); s.disabled=true;}
+    else{f.textContent=val<secret?'Too low!':'Too high!'; playSound('wrong');}
+    g.value='';
+  };
+  g.addEventListener('keydown',e=>{if(e.key==='Enter')s.click();});
+}
+
+// === Duel Mode ===
+function startDuel(){
+  btnBack.classList.remove('hidden');
+  gameArea.classList.remove('hidden');
+  playSound('start');
+  let round=1,total=5,p1Score=0,p2Score=0;
+  let secret=Math.floor(Math.random()*100)+1;
+  render();
+
+  function render(){
+    gameArea.innerHTML=`
+      <h2>⚔️ Duel Round ${round}/${total}</h2>
+      <div><input id="p1" type="number" placeholder="Player 1">
+      <input id="p2" type="number" placeholder="Player 2"></div>
+      <button id="submit">Submit</button>
+      <div id="feedback" class="feedback">Both players, enter guesses.</div>
+      <div><span class="score">P1: ${p1Score}</span>
+           <span class="score">P2: ${p2Score}</span></div>`;
+    const p1=document.getElementById('p1'),p2=document.getElementById('p2'),sub=document.getElementById('submit'),f=document.getElementById('feedback');
+    sub.onclick=()=>{
+      const g1=+p1.value,g2=+p2.value;
+      if(!g1||!g2){f.textContent='Both must guess.'; playSound('wrong'); return;}
+      const d1=Math.abs(g1-secret), d2=Math.abs(g2-secret);
+      let msg=`Secret: ${secret}. `;
+      if(d1===0&&d2===0){msg+='Both exact!';}
+      else if(d1===0){p1Score++; msg+='P1 exact!'; playSound('correct');}
+      else if(d2===0){p2Score++; msg+='P2 exact!'; playSound('correct');}
+      else if(d1<d2){p1Score++; msg+='P1 closer!'; playSound('correct');}
+      else if(d2<d1){p2Score++; msg+='P2 closer!'; playSound('correct');}
+      else msg+='Tie round.';
+      f.textContent=msg;
+      sub.disabled=true;
+      if(round<total){
+        setTimeout(()=>{
+          round++; secret=Math.floor(Math.random()*100)+1;
+          playSound('start'); render();
+        },7000);
+      } else {
+        setTimeout(()=>{
+          playSound('win');
+          f.innerHTML=`Final: P1 ${p1Score} — P2 ${p2Score}. ${p1Score>p2Score?'🏆 P1 wins!':p2Score>p1Score?'🏆 P2 wins!':'🤝 Tie!'}`;
+          sub.disabled=true;
+        },2000);
+      }
+    };
+    p2.addEventListener('keydown',e=>{if(e.key==='Enter')sub.click();});
+  }
 }
 </script>
 </body>
